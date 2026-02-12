@@ -51,6 +51,7 @@ include 'includes/header.php';
                 <th>Requested Amount</th>
                 <th>Admin Charge (10%)</th>
                 <th>TDS (5%)</th>
+                <th>Renewal Charges (5%)</th>
                 <th>Net Amount</th>
                 <th>Status</th>
                 <th>Requested At</th>
@@ -67,6 +68,7 @@ include 'includes/header.php';
                 <td>₹<?= number_format($row['amount'], 2) ?></td>
                 <td>₹<?= number_format($row['admin_charge'], 2) ?></td>
                 <td>₹<?= number_format($row['tds'], 2) ?></td>
+                <td>₹<?= number_format($row['renewal_charge'], 2) ?></td>
                 <td><b>₹<?= number_format($row['net_amount'], 2) ?></b></td>
                 <td>
                     <span class="badge bg-<?= $row['status']=='approved' ? 'success' : ($row['status']=='rejected' ? 'danger' : 'warning') ?>">

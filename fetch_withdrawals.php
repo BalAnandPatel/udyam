@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = (int) $_SESSION['user_id'];
 
-$sql = "SELECT id, amount, admin_charge, tds, net_amount, status, created_at, approved_at 
+$sql = "SELECT id, amount, admin_charge, tds,renewal_charge, net_amount, status, created_at, approved_at 
         FROM withdrawals 
         WHERE user_id=$user_id 
         ORDER BY id DESC";
@@ -27,6 +27,7 @@ if ($res && $res->num_rows > 0) {
                     <th>Requested Amount</th>
                     <th>Admin Charge (10%)</th>
                     <th>TDS (5%)</th>
+                    <th>Renewal Charge (5%)</th>
                     <th>Net Amount</th>
                     <th>Status</th>
                     <th>Requested At</th>
@@ -40,6 +41,7 @@ if ($res && $res->num_rows > 0) {
                 <td>₹".number_format((float)$row['amount'],2)."</td>
                 <td>₹".number_format((float)$row['admin_charge'],2)."</td>
                 <td>₹".number_format((float)$row['tds'],2)."</td>
+                <td>₹".number_format((float)$row['renewal_charge'],2)."</td>
                 <td><b>₹".number_format((float)$row['net_amount'],2)."</b></td>
                 <td>".ucfirst($row['status'])."</td>
                 <td>".date("Y-m-d H:i:s", strtotime($row['created_at']))."</td>

@@ -1,8 +1,8 @@
 <?php
 // Database configuration
 $servername = "localhost";  // usually localhost
-$username   = "u564757906_giplmlm";
-$password   = "12qw!@QW99"; 
+$username   = "root";
+$password   = ""; 
 $database   = "u564757906_giplmlm";
 
 // Create connection

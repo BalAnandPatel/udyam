@@ -30,51 +30,95 @@ $available_balance = ($total_earnings - $total_withdrawn);
 // Handle withdrawal request (POST)
 // =============================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $amount = (float) $_POST['amount'];
 
-    // ✅ NEW: Check direct referrals
-    $refCheck = $conn->query("SELECT COUNT(*) AS cnt FROM users WHERE sponsor_id=$user_id");
+    $amount = (float) $_POST['amount'];
+    $min_withdraw = 500;
+
+    // =============================
+    // Check direct referrals (min 2)
+    // =============================
+    $refCheck = $conn->query("SELECT COUNT(*) AS cnt FROM users WHERE sponsor_id = $user_id");
     $refRow   = $refCheck->fetch_assoc();
-    $direct_refs = (int)$refRow['cnt'];
+    $direct_refs = (int) $refRow['cnt'];
 
     if ($direct_refs < 2) {
-        $_SESSION['flash_message'] = "<div class='alert alert-warning'>⚠ You need at least 2 direct referrals before applying for withdrawal.</div>";
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-warning'>⚠ You need at least 2 direct referrals before applying for withdrawal.</div>";
         header("Location: withdraw.php");
         exit;
     }
 
-    if ($amount > 0 && $amount <= $available_balance) {
-        // Charges
-        $admin_charge = round($amount * 0.10, 2); // 10%
-        $tds          = round($amount * 0.05, 2); // 5%
-        $net_amount   = round($amount - $admin_charge - $tds, 2);
-
-        $sqlInsert = "INSERT INTO withdrawals 
-            (user_id, amount, admin_charge, tds, net_amount, status, created_at) 
-            VALUES (?, ?, ?, ?, ?, 'pending', NOW())";
-
-        $stmt = $conn->prepare($sqlInsert);
-
-        if (!$stmt) {
-            $_SESSION['flash_message'] = "<div class='alert alert-danger'>❌ Prepare failed: " . htmlspecialchars($conn->error) . "</div>";
-            header("Location: withdraw.php"); exit;
-        }
-
-        $stmt->bind_param("idddd", $user_id, $amount, $admin_charge, $tds, $net_amount);
-
-        if ($stmt->execute()) {
-            $_SESSION['flash_message'] = "<div class='alert alert-success'>✅ Withdrawal request submitted successfully!</div>";
-        } else {
-            $_SESSION['flash_message'] = "<div class='alert alert-danger'>❌ Execute failed: " . htmlspecialchars($stmt->error) . "</div>";
-        }
-        $stmt->close();
-    } else {
-        $_SESSION['flash_message'] = "<div class='alert alert-warning'>⚠ Invalid amount or insufficient balance.</div>";
+    // =============================
+    // Minimum withdrawal check
+    // =============================
+    if ($amount < $min_withdraw) {
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-warning'>⚠ Minimum withdrawal amount is ₹500.</div>";
+        header("Location: withdraw.php");
+        exit;
     }
 
+    // =============================
+    // Balance check
+    // =============================
+    if ($amount > $available_balance) {
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-warning'>⚠ Insufficient balance.</div>";
+        header("Location: withdraw.php");
+        exit;
+    }
+
+    // =============================
+    // Charges calculation
+    // =============================
+    $admin_charge   = round($amount * 0.10, 2); // 10% admin
+    $tds            = round($amount * 0.05, 2); // 5% TDS
+    $renewal_charge = round($amount * 0.05, 2); // 5% renewal
+
+    $net_amount = round(
+        $amount - $admin_charge - $tds - $renewal_charge,
+        2
+    );
+
+    // =============================
+    // Insert withdrawal request
+    // =============================
+    $sqlInsert = "INSERT INTO withdrawals 
+    (user_id, amount, admin_charge, tds, renewal_charge, net_amount, status, created_at) 
+    VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())";
+
+    $stmt = $conn->prepare($sqlInsert);
+
+    if (!$stmt) {
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-danger'>❌ Prepare failed: " . htmlspecialchars($conn->error) . "</div>";
+        header("Location: withdraw.php");
+        exit;
+    }
+
+    $stmt->bind_param(
+        "iddddd",
+        $user_id,
+        $amount,
+        $admin_charge,
+        $tds,
+        $renewal_charge,
+        $net_amount
+    );
+
+    if ($stmt->execute()) {
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-success'>✅ Withdrawal request submitted successfully!</div>";
+    } else {
+        $_SESSION['flash_message'] =
+            "<div class='alert alert-danger'>❌ Execute failed: " . htmlspecialchars($stmt->error) . "</div>";
+    }
+
+    $stmt->close();
     header("Location: withdraw.php");
     exit;
 }
+
 
 include 'includes/header.php';
 ?>
